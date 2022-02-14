@@ -78,20 +78,16 @@ var action = {
 
         console.log('onWillAppear', jsn.payload.settings);
 
-        const clock = new TomatoTimer(jsn);
-        // cache the current clock
-        this.cache[jsn.context] = clock;
-        this.onDidReceiveSettings(jsn);
-
+        let found = this.cache[jsn.context];
+        if(!found) {
+            const clock = new TomatoTimer(jsn);
+            // cache the current clock
+            this.cache[jsn.context] = clock;
+            this.onDidReceiveSettings(jsn);
+        }
     },
 
     onWillDisappear: function(jsn) {
-        let found = this.cache[jsn.context];
-        if(found) {
-            // remove the clock from the cache
-            found.destroyClock();
-            delete this.cache[jsn.context];
-        }
     },
 
     onKeyDown: function(jsn) {
