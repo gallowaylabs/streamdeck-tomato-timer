@@ -64,6 +64,11 @@ var action = {
                 clock.setLongBreakTime(parseInt(settings.long_break_time) * 60)
             }
         }
+        if (settings.hasOwnProperty('disable_blink')) { 
+            if (clock) {
+                clock.setBlinkDisabled(settings.disable_blink)
+            }
+        }
 
     },
 
@@ -126,7 +131,8 @@ function TomatoTimer(jsonObj) {
         alarmFileName = null,
         audioElement = null,
         buttonDown = false,
-        skipNextKeyUp = false;
+        skipNextKeyUp = false,
+        blinkDisabled = false;
         
     function createClock(settings) {
         canvas = document.createElement('canvas');
@@ -195,9 +201,13 @@ function TomatoTimer(jsonObj) {
         phase = nextPhase
         blinking = true
         
-        clockTimer = setInterval(function(sx) {
+        if (blinkDisabled) {
             drawBlink()
-        }, 1000);
+        } else {
+            clockTimer = setInterval(function(sx) {
+                drawBlink()
+            }, 1000);
+        }
 
         if (alarmFileName) {
             audioElement = new Audio(alarmFileName)
@@ -215,27 +225,6 @@ function TomatoTimer(jsonObj) {
         cycleCounter = 0
         skipNextKeyUp = true
         drawNextPhasePreview()
-    }
-
-    function setClockFace(newClockFace) {
-        clockface = newClockFace;
-        clock.setColors(clockface.colors);
-        clockface.text !== true && $SD.api.setTitle(context, '', null);
-
-        if (running) {
-            drawClock();
-        } else if (!blinking) {
-            drawNextPhasePreview()
-        }
-        
-    }
-
-    function setAlarmNum(idx) {
-        if (idx >= 0) {
-            alarmFileName = `action/${sounds[idx].filename}`
-        } else {
-            alarmFileName = null
-        }
     }
 
     function drawBlink(jsn) {
@@ -274,6 +263,27 @@ function TomatoTimer(jsonObj) {
         }
     }
 
+    function setClockFace(newClockFace) {
+        clockface = newClockFace;
+        clock.setColors(clockface.colors);
+        clockface.text !== true && $SD.api.setTitle(context, '', null);
+
+        if (running) {
+            drawClock();
+        } else if (!blinking) {
+            drawNextPhasePreview()
+        }
+        
+    }
+
+    function setAlarmNum(idx) {
+        if (idx >= 0) {
+            alarmFileName = `action/${sounds[idx].filename}`
+        } else {
+            alarmFileName = null
+        }
+    }
+
     function setWorkTime(time) {
         this.workTime = time
     }
@@ -284,6 +294,10 @@ function TomatoTimer(jsonObj) {
 
     function setLongBreakTime(time) {
         this.longBreakTime = time
+    }
+
+    function setBlinkDisabled(disabled) {
+        blinkDisabled = disabled
     }
 
     function setClockFaceNum(idx) {
@@ -302,7 +316,6 @@ function TomatoTimer(jsonObj) {
         name: name,
         drawClock: drawClock,
         origContext: origContext,
-        setClockFaceNum: setClockFaceNum,
         destroyClock: destroyClock,
         buttonPressed: buttonPressed,
         longBreakTime: longBreakTime,
@@ -310,8 +323,10 @@ function TomatoTimer(jsonObj) {
         workTime: workTime,
         setAlarmNum: setAlarmNum,
         checkButtonHeld: checkButtonHeld,
+        setClockFaceNum: setClockFaceNum,
         setWorkTime: setWorkTime,
         setShortBreakTime: setShortBreakTime,
         setLongBreakTime: setLongBreakTime,
+        setBlinkDisabled: setBlinkDisabled
     };
 }

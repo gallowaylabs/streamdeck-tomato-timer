@@ -21,7 +21,7 @@
     "Name": "Tomato Timer",
     "Icon": "pluginIcon",
     "URL": "https://www.elgato.com/gaming/stream-deck",
-    "Version": "2.0.0",
+    "Version": "0.1.0",
     "OS": [
         {
             "Platform": "mac",

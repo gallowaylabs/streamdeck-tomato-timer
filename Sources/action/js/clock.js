@@ -63,11 +63,11 @@ function Clock(cnv) {
     }
 
     function drawBlink() {
-        ctx.fillStyle = blinkCounter % 2 == 0 ? 'white' : 'black';
+        // Blinking state alternates between background and stroke color, nominally every 1s
+        ctx.fillStyle = blinkCounter % 2 == 0 ? colors.stroke : colors.background;
         ctx.fillRect(0, 0, cnv.width, cnv.height);
 
-        ctx.fillStyle = blinkCounter % 2 == 1 ? 'white' : 'black';
-        ctx.font = "bold 20px arial";
+        ctx.fillStyle = blinkCounter % 2 == 1 ? colors.stroke : colors.background;
         ctx.textBaseline = 'middle';
         ctx.textAlign = 'center';
         ctx.fillText(this.currentPhase, clockX, clockY)
@@ -84,7 +84,7 @@ function Clock(cnv) {
             ctx.fillStyle = colors.background;
             ctx.fillRect(0, 0, cnv.width, cnv.height);
         }
-        
+
         ctx.beginPath();
         ctx.arc(clockX, clockY, 60, clockStart, clockEnd, false);
         ctx.lineWidth = 15;

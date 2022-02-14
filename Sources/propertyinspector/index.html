@@ -39,6 +39,16 @@
             <button class="sdpi-item-value" onclick="toggleSoundPreview()">Click to play</button>
         </div>
 
+        <div type="checkbox" class="sdpi-item">
+            <div class="sdpi-item-label">Disable Blinking</div>
+            <div class="sdpi-item-value">
+                <div class="sdpi-item-child">
+                    <input id="disable_blink" type="checkbox" value="disable" onchange="sendValueToPlugin(event.target.checked, 'disable_blink')">
+                    <label for="disable_blink" class="sdpi-item-label"><span></span>Yes</label>
+                </div>
+            </div>
+        </div>
+
         <details>
             <summary>More Info</summary>
             <p>The Pomodoro technique was created by Francesco Cirillo for a more productive way to work and study. The basic formula is:</p>
@@ -116,7 +126,7 @@
 
         $SD.on('didReceiveSettings', (jsonObj) => {
 
-            console.log("PI didReceiveSettings", jsonObj);
+            console.log("didReceiveSettings", jsonObj);
 
             if(jsonObj && jsonObj.payload && jsonObj.payload.settings) {
 
@@ -129,6 +139,11 @@
                         inputField.value = jsonObj.payload.settings[field];
                     }
                 });
+
+                if (jsonObj.payload.settings.hasOwnProperty('disable_blink')) {
+                    const inputField = document.querySelector('#disable_blink');
+                    inputField.checked = jsonObj.payload.settings['disable_blink']
+                }
 
                 if(jsonObj.payload.settings.hasOwnProperty('clock_index')) {
                     const oClockSelector = document.querySelector(".clockSelector");
