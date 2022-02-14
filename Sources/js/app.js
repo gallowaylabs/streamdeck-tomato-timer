@@ -136,7 +136,7 @@ function TomatoTimer(jsonObj) {
         canvas.height = 144;
         clock = new Clock(canvas);
         clock.setColors(clockface.colors);
-        drawClock()
+        drawNextPhasePreview()
     }
 
     function checkButtonHeld() {
@@ -159,8 +159,11 @@ function TomatoTimer(jsonObj) {
             blinking = false;
             window.clearInterval(clockTimer);
             clockTimer = 0;
-            audioElement.pause()
             drawNextPhasePreview()
+            
+            if (audioElement) {
+                audioElement.pause()
+            }
             return;
         }
 

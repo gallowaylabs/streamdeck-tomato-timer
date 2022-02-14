@@ -15,12 +15,8 @@ A configurable timer for practicing the pomodoro method for balancing work and b
 
 # Installation
 
-In the Release folder, you can find the file `com.gallowaylabs.tomato.sdPlugin`. If you double-click this file on your machine, Stream Deck will install the plugin.
-
-
-##  Source code
-
-The Sources folder contains the source code of the plugin.
+In the Release folder, you can find the file `com.gallowaylabs.tomato.sdPlugin`. If you double-click this file on your machine, Stream Deck will install the plugin. 
+If you don't have the repository downloaded, get the latest pre-built version on the [releases page](https://github.com/gallowaylabs/streamdeck-tomato-timer/releases)
 
 
 # Notes / Known Issues
