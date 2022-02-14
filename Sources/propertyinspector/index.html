@@ -1,0 +1,211 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <title>com.gallowaylabs.tomato PI</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../common/css/sdpi.css">
+</head>
+
+<body>
+    <div class="sdpi-wrapper hidden">
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Work Time</div>
+            <input class="sdpi-item-value" id="work_time" inputmode="numeric" pattern="[0-9]*" type="number" onchange="sendValueToPlugin(event.target.value, 'work_time')" placeholder="25">
+        </div>
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Short Break Time</div>
+            <input class="sdpi-item-value" id="short_break_time" inputmode="numeric" pattern="[0-9]*" type="number" onchange="sendValueToPlugin(event.target.value, 'short_break_time')" placeholder="5">
+        </div>
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Long Break Time</div>
+            <input class="sdpi-item-value" id="long_break_time" inputmode="numeric" pattern="[0-9]*" type="number" onchange="sendValueToPlugin(event.target.value, 'long_break_time')" placeholder="10">
+        </div>
+
+        <div type="select" class="sdpi-item">
+            <div class="sdpi-item-label">Color Scheme</div>
+            <select class="sdpi-item-value select clockSelector" onchange="sendValueToPlugin(event.target.value, 'clock_index')">
+            </select>
+        </div>
+
+        <div type="select" class="sdpi-item">
+            <div class="sdpi-item-label">Alarm Sound</div>
+            <select class="sdpi-item-value select soundSelector" onchange="sendValueToPlugin(event.target.value, 'alarm_sound')">
+                <option value="-1" label="None"></option>
+            </select>
+        </div>
+        <div class="sdpi-item" id="tiny_button">
+            <div class="sdpi-item-label">Preview Sound</div>
+            <button class="sdpi-item-value" onclick="toggleSoundPreview()">Click to play</button>
+        </div>
+
+        <details>
+            <summary>More Info</summary>
+            <p>The Pomodoro technique was created by Francesco Cirillo for a more productive way to work and study. The basic formula is:</p>
+            <ul>
+                <li>Start the work timer (25 minutes)</li>
+                <li>Work until the timer expires</li>
+                <li>Take a short break (5 minutes)</li>
+                <li>Repeat this process 3 more times, then</li>
+                <li>Take a long break (10 minutes)</li>
+            </ul>
+
+            <p>
+                This action will audibly and visibly alert you when the timer has expired. Press the button again to start the timer for the next phase. 
+                If you take an unexpected break and want to reset the internal work/break cycle counter, press and hold the button for 2 seconds.
+            </p>
+        </details>
+    </div>
+
+    <script src="../common/common.js"></script>
+    <script src="../action/js/clockfaces.js"></script>
+    <script src="../action/js/sounds.js"></script>
+
+    <script>
+
+        /** Step 1: Subscribe to the 'connected' event
+         * and call your own initialization method.
+         * The connected - event is emitted, when StreamDeck 
+         * has established a connection. 
+         * The 'connected' event carries a JSON object containing
+         * necessary information about the connection and the
+         * inital data.
+         */
+        var MSETTINGS = {};
+        var $localizedStrings = {};
+        var uuid,
+            actionInfo,
+            ctx,
+            lang,
+            audioElement;
+
+        $SD.on('connected', (jsonObj) => {
+
+            $SD.api.getSettings();
+
+            uuid = jsonObj.uuid;
+            actionInfo = jsonObj.actionInfo.action;
+            ctx = jsonObj.actionInfo.context;
+            lang = jsonObj.applicationInfo.application.language;
+
+            /** Localization */
+            if($localizedStrings && Object.keys($localizedStrings).length > 0) {
+                localizeUI();
+            }
+
+            const oClockSelector = document.querySelector(".clockSelector");
+            Object.keys(clockfaces).map(e => {
+                let option = document.createElement('option');
+                option.setAttribute('value', e);
+                option.setAttribute('label', localize(clockfaces[e].name));
+                oClockSelector.appendChild(option);
+            });
+
+            const oSoundSelector = document.querySelector(".soundSelector");
+            Object.keys(sounds).map(e => {
+                let option = document.createElement('option');
+                option.setAttribute('value', e);
+                option.setAttribute('label', localize(sounds[e].name));
+                oSoundSelector.appendChild(option);
+            });
+
+            const el = document.querySelector('.sdpi-wrapper');
+            el.classList.remove('hidden');
+
+        });
+
+        $SD.on('didReceiveSettings', (jsonObj) => {
+
+            console.log("PI didReceiveSettings", jsonObj);
+
+            if(jsonObj && jsonObj.payload && jsonObj.payload.settings) {
+
+                MSETTINGS = jsonObj.payload.settings;
+
+                var textFields = ['work_time', 'short_break_time', 'long_break_time'];
+                textFields.forEach(field => {
+                    if (jsonObj.payload.settings.hasOwnProperty(field)) {
+                        const inputField = document.querySelector(`#${field}`);
+                        inputField.value = jsonObj.payload.settings[field];
+                    }
+                });
+
+                if(jsonObj.payload.settings.hasOwnProperty('clock_index')) {
+                    const oClockSelector = document.querySelector(".clockSelector");
+                    const val = Math.round(jsonObj.payload.settings.clock_index);
+                    oClockSelector && Array.prototype.forEach.call(oClockSelector.options, function(o) {
+                        o.label = localize(o.label);
+                        if(o.value !== val) {
+                            oClockSelector.value = val;
+                        }
+                    })
+                }
+                
+                if(jsonObj.payload.settings.hasOwnProperty('alarm_sound')) {
+                    const oSoundSelector = document.querySelector(".soundSelector");
+                    const val = Math.round(jsonObj.payload.settings.alarm_sound);
+                    oSoundSelector && Array.prototype.forEach.call(oSoundSelector.options, function(o) {
+                        o.label = localize(o.label);
+                        if(o.value !== val) {
+                            oSoundSelector.value = val;
+                        }
+                    })
+
+                }
+            }
+        });
+
+
+        function toggleSoundPreview() {
+            const oSoundSelector = document.querySelector(".soundSelector");
+            
+            if (!audioElement || audioElement.paused) {
+                if (oSoundSelector.value >= 0) {
+                    audioElement = new Audio(`../action/${sounds[oSoundSelector.value].filename}`)
+                    audioElement.play()
+                }
+            } else if (audioElement && !audioElement.paused) {
+                audioElement.pause()
+            }
+        }
+
+
+        function sendValueToPlugin(value, param) {
+
+            MSETTINGS[param] = value;
+
+            if($SD && $SD.connection) {
+                $SD.api.setSettings(null, MSETTINGS);
+            }
+        }
+
+        function localize(s) {
+            if(Utils.isUndefined(s)) return '';
+            let str = String(s);
+            try {
+                str = $localizedStrings[str] || str;
+            } catch(b) {}
+            return str;
+        };
+
+        function _e(s) {
+            return localize(s);
+        }
+
+        function localizeUI() {
+            const el = document.querySelector('.sdpi-wrapper');
+            Array.from(el.querySelectorAll('sdpi-item-label')).forEach(e => {
+                e.innerHTML = e.innerHTML.replace(e.innerText, localize(e.innerText));
+            });
+            Array.from(el.querySelectorAll('*:not(script)')).forEach(e => {
+                if(e.childNodes && e.childNodes.length > 0 && e.childNodes[0].nodeValue && typeof e.childNodes[0].nodeValue === 'string') {
+                    e.childNodes[0].nodeValue = localize(e.childNodes[0].nodeValue);
+                }
+            });
+        }
+
+    </script>
+
+</body>
+
+</html>

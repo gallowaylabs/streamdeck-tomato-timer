@@ -1,0 +1,38 @@
+{
+    "Actions": [
+        {
+            "Icon": "action/images/actionimage",
+            "Name": "Tomato Timer",
+            "States": [
+                {
+                    "Image": "action/images/image"
+                }
+            ],
+            "SupportedInMultiActions": false,
+            "Tooltip": "Balance your work and break time with the Pomodoro method",
+            "UUID": "com.gallowaylabs.tomato.clock"
+        }
+    ],
+    "SDKVersion": 2,
+    "Author": "Galloway Labs",
+    "CodePath": "index.html",
+    "PropertyInspectorPath": "propertyinspector/index.html",
+    "Description": "Balance your work and break time with the Pomodoro method",
+    "Name": "Tomato Timer",
+    "Icon": "pluginIcon",
+    "URL": "https://www.elgato.com/gaming/stream-deck",
+    "Version": "2.0.0",
+    "OS": [
+        {
+            "Platform": "mac",
+            "MinimumVersion": "10.11"
+        },
+        {
+            "Platform": "windows",
+            "MinimumVersion": "10"
+        }
+    ],
+    "Software": {
+        "MinimumVersion": "4.1"
+    }
+}
