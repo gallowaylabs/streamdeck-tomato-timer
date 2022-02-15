@@ -305,28 +305,28 @@ class Tomato {
 
     
     setWorkTime(time) {
-        this.config.workTime = time
+        this.config.workTime = time || 25 * 60
 
         if (this.nextPhase.type == "WORK") {
-            this.nextPhase.duration = time
+            this.nextPhase.duration = this.config.workTime
             this.drawClock()
         }
     }
 
     setShortBreakTime(time) {
-        this.config.shortBreakTime = time
+        this.config.shortBreakTime = time || 5 * 60
 
         if (this.nextPhase.type == "SHORT") {
-            this.nextPhase.duration = time
+            this.nextPhase.duration = this.config.shortBreakTime
             this.drawClock()
         }
     }
 
     setLongBreakTime(time) {
-        this.config.longBreakTime = time
+        this.config.longBreakTime = time || 10 * 60
 
         if (this.nextPhase.type == "LONG") {
-            this.nextPhase.duration = time
+            this.nextPhase.duration = this.config.longBreakTime
             this.drawClock()
         }
     }
