@@ -30,18 +30,16 @@ var action = {
         console.log("onDidReceiveSettings", jsn);
         const settings = jsn.payload.settings;
         const clock = this.cache[jsn.context];
-        if(!settings || !clock) return;
+        if (!settings || !clock) return;
 
-        if (settings.hasOwnProperty('clock_index')) { /* if there's no clock-definitions, so simply do nothing */
-            /* set the appropriate clockface index as choosen from the popupmenu in PI */
+        if (settings.hasOwnProperty('clock_index')) { 
             if (clock) {
                 clock.setClockFaceNum(Number(settings.clock_index));
-                this.cache[jsn.context] = clock;
             }
         }
-        if (settings.hasOwnProperty('alarm_sound')) { /* if there's no clock-definitions, so simply do nothing */
+        if (settings.hasOwnProperty('alarm_filename')) {
             if (clock) {
-                clock.setAlarmNum(Number(settings.alarm_sound));
+                clock.setAlarmFileName(settings.alarm_filename);
             }
         }
         if (settings.hasOwnProperty('clock_type')) {
@@ -69,7 +67,6 @@ var action = {
                 clock.setBlinkDisabled(settings.disable_blink)
             }
         }
-
     },
 
     onWillAppear: function(jsn) {
@@ -79,253 +76,262 @@ var action = {
         console.log('onWillAppear', jsn.payload.settings);
 
         let found = this.cache[jsn.context];
-        if(!found) {
-            const clock = new TomatoTimer(jsn);
-            // cache the current clock
+        if (!found) {
+            const clock = new Tomato(jsn.context);
             this.cache[jsn.context] = clock;
             this.onDidReceiveSettings(jsn);
         }
     },
 
     onWillDisappear: function(jsn) {
+        // Likely a no-op, we want to keep the Tomato instance to keep the timers running
     },
 
     onKeyDown: function(jsn) {
         const clock = this.cache[jsn.context];
         /** Edge case +++ */
-        if(!clock) this.onWillAppear(jsn);
-        else clock.checkButtonHeld();
+        if (!clock) this.onWillAppear(jsn);
+
+
+        this.cache[`${jsn.context}-buttoncheck`] = true
+        
+        setTimeout(function() {
+            if (this.cache[`${jsn.context}-buttoncheck`]) {
+                this.cache[`${jsn.context}-skipnext`] = true
+                clock.reset()
+            }
+        }.bind(this), 1750)
+
     },
 
     onKeyUp: function(jsn) {
         const clock = this.cache[jsn.context];
-        /** Edge case +++ */
-        if(!clock) this.onWillAppear(jsn);
-        else clock.buttonPressed();
+        this.cache[`${jsn.context}-buttoncheck`] = false
+        
+        if (this.cache[`${jsn.context}-skipnext`]) {
+            this.cache[`${jsn.context}-skipnext`] = false
+        } else {
+            /** Edge case +++ */
+            if (!clock) this.onWillAppear(jsn);
+            else clock.buttonPressed();
+        }
     }
 
 };
 
-function TomatoTimer(jsonObj) {
-    var jsn = jsonObj,
-        context = jsonObj.context,
-        clock = null,
-        clockTimer = 0,
-        clockface = clockfaces[0],
-        currentClockFaceIdx = 0,
-        origContext = jsonObj.context,
-        canvas = null,
-        cycleCounter = 0,
-        phase = 'WORK',
-        nextPhase = 'BREAK'
-        running = false,
-        blinking = false,
-        audioElement = null,
-        workTime = 25 * 60,
-        shortBreakTime = 5 * 60,
-        longBreakTime = 10 * 60,
-        alarmFileName = null,
-        audioElement = null,
-        buttonDown = false,
-        skipNextKeyUp = false,
-        blinkDisabled = false;
-        
-    function createClock(settings) {
-        canvas = document.createElement('canvas');
-        canvas.width = 144;
-        canvas.height = 144;
-        clock = new Clock(canvas);
-        clock.setColors(clockface.colors);
-        drawNextPhasePreview()
-    }
+class Tomato {
+    constructor(context) {
+        this.context = context
+        this.canvas = document.createElement('canvas')
+        this.canvas.width = 144;
+        this.canvas.height = 144;
 
-    function checkButtonHeld() {
-        buttonDown = true
-        setTimeout(function() {
-            if (buttonDown) {
-                reset()
-            }
-        }, 1750)
-    }
+        this.clock = new Clock(this.canvas);
+        this.clockface = clockfaces[0]
+        this.clock.setColors(this.clockface.colors);
 
-    function buttonPressed() {
-        buttonDown = false;
-        if (skipNextKeyUp) {
-            skipNextKeyUp = false
-            return
+        this.interval = 0
+        this.cycleCounter = 0
+        this.audioElement = null
+
+        this.config = {
+            workTime: 25 * 60,
+            shortBreakTime: 5 * 60,
+            longBreakTime: 10 * 60,
+            alarmFileName: null,
+            blinkDisabled: false, 
         }
 
-        if (blinking) {
-            blinking = false;
-            window.clearInterval(clockTimer);
-            clockTimer = 0;
-            drawNextPhasePreview()
+        // PAUSED: between phases. 
+        // RUNNING: timer is counting down in a phase
+        // ALARMING: timer has run out and is alerting the user about this
+        this.state = 'PAUSED' 
+
+        this.phase = null
+        this.nextPhase = this.workPhase()
+
+        this.drawClock()
+    }
+
+    workPhase() {
+        return {
+            name: "WORK",
+            duration: this.config.workTime,
+            type: "WORK"
+        }
+    }
+
+    shortBreakPhase() {
+        return {
+            name: "BREAK",
+            duration: this.config.shortBreakTime,
+            type: "SHORT"
+        }
+    }
+
+    longBreakPhase() {
+        return {
+            name: "BREAK",
+            duration: this.config.longBreakTime,
+            type: "LONG"
+        }
+    }
+
+    buttonPressed() {
+        if (this.state == 'ALARMING') {
+            this.alarmAcknowledged()
+        } else if (this.state == 'RUNNING') {
+            // TODO pause
+        } else if (this.state == 'PAUSED') {
+            this.startPhase()
+        }
+    }
+
+    startPhase() {
+        this.state = "RUNNING"
+        this.phase = this.nextPhase
+        this.clock.start(this.phase.duration, this.phase.name)
+
+        if (this.phase.name == 'WORK') {
+            if (this.cycleCounter == 3) {
+                this.nextPhase = this.longBreakPhase()
+                this.cycleCounter = 0;
+            } else {
+                this.nextPhase = this.shortBreakPhase()
+                this.cycleCounter += 1;
+            }
+        } else {
+            this.nextPhase = this.workPhase()
+        }
+
+        this.interval = setInterval(function(sx) {
+            var remainingSeconds = this.drawClock();
+            if (remainingSeconds <= 0) {
+                this.timerExpired()
+            }
+        }.bind(this), 1000);
+    }
+
+    alarmAcknowledged() {
+        this.state = "PAUSED"
+
+        window.clearInterval(this.interval);
+        this.interval = 0;
+        this.drawClock()
+
+        if (this.audioElement) {
+            this.audioElement.pause()
+        }
+        return;
+    }
+
+    timerExpired() {
+        this.clock.stop()
+        window.clearInterval(this.interval)
+        this.interval = 0
+        this.state = "ALARMING"
+        
+        if (this.config.blinkDisabled) {
+            // Draw it once to show the "expired" image
+            this.drawClock()
+        } else {
+            this.interval = setInterval(function(sx) {
+                // Redraw it every second, as the background/text color alternates every time
+                this.drawClock()
+            }.bind(this), 1000);
+        }
+
+        if (this.config.alarmFileName) {
+            this.audioElement = new Audio(this.config.alarmFileName)
+            this.audioElement.play()
+        }
+    }
+
+    drawClock() {
+        if (this.state == 'RUNNING') {
+            var remainingSeconds = Math.round(this.clock.drawClock());
+            var seconds = ("" + remainingSeconds % 60).padStart(2, 0)
+            var minutes = Math.floor(remainingSeconds / 60)
             
-            if (audioElement) {
-                audioElement.pause()
-            }
-            return;
-        }
+            this.clockface.text === true && $SD.api.setTitle(this.context, `${minutes}:${seconds}`, null);
+            $SD.api.setImage(
+                this.context,
+                this.clock.getImageData()
+            );
 
-        if (!running) {
-            if (phase == 'WORK') {
-                clock.start(this.workTime, phase)
-                nextPhase = 'BREAK'
-            } else if (phase == 'BREAK') {
-                if (cycleCounter == 3) {
-                    clock.start(this.longBreakTime, phase)
-                    cycleCounter = 0;
-                } else {
-                    clock.start(this.shortBreakTime, phase)
-                    cycleCounter += 1;
-                }
-                nextPhase = 'WORK'
-            }
-            running = true
-
-            clockTimer = setInterval(function(sx) {
-                drawClock();
-                if (clock.remainingSeconds() <= 0) {
-                    timerExpired()
-                }
-            }, 1000);
-        }
-    }
-
-    function timerExpired() {
-        clock.stop()
-        window.clearInterval(clockTimer)
-        clockTimer = 0
-        running = false
-        phase = nextPhase
-        blinking = true
-        
-        if (blinkDisabled) {
-            drawBlink()
+            return remainingSeconds
+        } else if (this.state == 'ALARMING') {
+            this.clock.drawBlink()
+            this.clockface.text === true && $SD.api.setTitle(this.context, "0:00", null);
+            $SD.api.setImage(
+                this.context,
+                this.clock.getImageData()
+            );
         } else {
-            clockTimer = setInterval(function(sx) {
-                drawBlink()
-            }, 1000);
-        }
-
-        if (alarmFileName) {
-            audioElement = new Audio(alarmFileName)
-            audioElement.play()
-        }
-    }
-
-    function reset() {
-        clock.stop()
-        window.clearInterval(clockTimer)
-        clockTimer = 0
-        running = false
-        blinking = false
-        phase = 'WORK'
-        cycleCounter = 0
-        skipNextKeyUp = true
-        drawNextPhasePreview()
-    }
-
-    function drawBlink(jsn) {
-        clock.drawBlink()
-        clockface.text === true && $SD.api.setTitle(context, "0:00", null);
-        $SD.api.setImage(
-            context,
-            clock.getImageData()
-        );
-    }
-
-    function drawNextPhasePreview(jsn) {
-        clock.drawNextPhasePreview(phase)
-        clockface.text === true && $SD.api.setTitle(context, `0:00`, null);
-        $SD.api.setImage(
-            context,
-            clock.getImageData()
-        );
-    }
-
-    function drawClock(jsn) {
-        var remainingSeconds = Math.round(clock.drawClock());
-        var seconds = ("" + remainingSeconds % 60).padStart(2, 0)
-        var minutes = Math.floor(remainingSeconds / 60)
-        clockface.text === true && $SD.api.setTitle(context, `${minutes}:${seconds}`, null);
-        $SD.api.setImage(
-            context,
-            clock.getImageData()
-        );
-    }
-
-    function destroyClock() {
-        if(clockTimer !== 0) {
-            window.clearInterval(clockTimer);
-            clockTimer = 0;
-        }
-    }
-
-    function setClockFace(newClockFace) {
-        clockface = newClockFace;
-        clock.setColors(clockface.colors);
-        clockface.text !== true && $SD.api.setTitle(context, '', null);
-
-        if (running) {
-            drawClock();
-        } else if (!blinking) {
-            drawNextPhasePreview()
+            this.clock.drawNextPhasePreview(this.nextPhase.name)
+            var minutes = Math.floor(this.nextPhase.duration / 60)
+            this.clockface.text === true && $SD.api.setTitle(this.context, `${minutes}:00`, null);
+            $SD.api.setImage(
+                this.context,
+                this.clock.getImageData()
+            );
         }
         
+        return 0
     }
 
-    function setAlarmNum(idx) {
-        if (idx >= 0) {
-            alarmFileName = `action/${sounds[idx].filename}`
-        } else {
-            alarmFileName = null
+    reset() {
+        this.clock.stop()
+        window.clearInterval(this.interval)
+        this.interval = 0
+        this.state = 'PAUSED'
+        this.phase = null
+        this.nextPhase = this.workPhase()
+        this.cycleCounter = 0
+        this.drawClock()
+    }
+
+    
+    setWorkTime(time) {
+        this.config.workTime = time
+
+        if (this.nextPhase.type == "WORK") {
+            this.nextPhase.duration = time
+            this.drawClock()
         }
     }
 
-    function setWorkTime(time) {
-        this.workTime = time
+    setShortBreakTime(time) {
+        this.config.shortBreakTime = time
+
+        if (this.nextPhase.type == "SHORT") {
+            this.nextPhase.duration = time
+            this.drawClock()
+        }
     }
 
-    function setShortBreakTime(time) {
-        this.shortBreakTime = time
+    setLongBreakTime(time) {
+        this.config.longBreakTime = time
+
+        if (this.nextPhase.type == "LONG") {
+            this.nextPhase.duration = time
+            this.drawClock()
+        }
     }
 
-    function setLongBreakTime(time) {
-        this.longBreakTime = time
+    setBlinkDisabled(disabled) {
+        this.config.blinkDisabled = disabled
     }
 
-    function setBlinkDisabled(disabled) {
-        blinkDisabled = disabled
+    setAlarmFileName(name) {
+        this.config.alarmFileName = name
     }
 
-    function setClockFaceNum(idx) {
-        currentClockFaceIdx = idx < clockfaces.length ? idx : 0;
-        this.currentClockFaceIdx = currentClockFaceIdx;
-        setClockFace(clockfaces[currentClockFaceIdx]);
+    setClockFaceNum(idx) {
+        var newClockFaceIdx = Math.min(Math.max(0, idx), clockfaces.length - 1)
+        this.clockface = clockfaces[newClockFaceIdx];
+        this.clock.setColors(this.clockface.colors);
+
+        this.drawClock();
     }
-
-    createClock();
-
-    return {
-        clock: clock,
-        clockTimer: clockTimer,
-        clockface: clockface,
-        currentClockFaceIdx: currentClockFaceIdx,
-        name: name,
-        drawClock: drawClock,
-        origContext: origContext,
-        destroyClock: destroyClock,
-        buttonPressed: buttonPressed,
-        longBreakTime: longBreakTime,
-        shortBreakTime: shortBreakTime,
-        workTime: workTime,
-        setAlarmNum: setAlarmNum,
-        checkButtonHeld: checkButtonHeld,
-        setClockFaceNum: setClockFaceNum,
-        setWorkTime: setWorkTime,
-        setShortBreakTime: setShortBreakTime,
-        setLongBreakTime: setLongBreakTime,
-        setBlinkDisabled: setBlinkDisabled
-    };
 }

@@ -30,8 +30,8 @@
 
         <div type="select" class="sdpi-item">
             <div class="sdpi-item-label">Alarm Sound</div>
-            <select class="sdpi-item-value select soundSelector" onchange="sendValueToPlugin(event.target.value, 'alarm_sound')">
-                <option value="-1" label="None"></option>
+            <select class="sdpi-item-value select soundSelector" onchange="sendValueToPlugin(event.target.value, 'alarm_filename')">
+                <option value="" label="None"></option>
             </select>
         </div>
         <div class="sdpi-item" id="tiny_button">
@@ -114,7 +114,7 @@
             const oSoundSelector = document.querySelector(".soundSelector");
             Object.keys(sounds).map(e => {
                 let option = document.createElement('option');
-                option.setAttribute('value', e);
+                option.setAttribute('value', sounds[e].filename);
                 option.setAttribute('label', localize(sounds[e].name));
                 oSoundSelector.appendChild(option);
             });
@@ -156,12 +156,11 @@
                     })
                 }
                 
-                if(jsonObj.payload.settings.hasOwnProperty('alarm_sound')) {
+                if(jsonObj.payload.settings.hasOwnProperty('alarm_filename')) {
                     const oSoundSelector = document.querySelector(".soundSelector");
-                    const val = Math.round(jsonObj.payload.settings.alarm_sound);
                     oSoundSelector && Array.prototype.forEach.call(oSoundSelector.options, function(o) {
-                        o.label = localize(o.label);
-                        if(o.value !== val) {
+                        var val = jsonObj.payload.settings.alarm_filename
+                        if (o.value !== val) {
                             oSoundSelector.value = val;
                         }
                     })
@@ -175,8 +174,8 @@
             const oSoundSelector = document.querySelector(".soundSelector");
             
             if (!audioElement || audioElement.paused) {
-                if (oSoundSelector.value >= 0) {
-                    audioElement = new Audio(`../action/${sounds[oSoundSelector.value].filename}`)
+                if (oSoundSelector.value != "") {
+                    audioElement = new Audio(`../${oSoundSelector.value}`)
                     audioElement.play()
                 }
             } else if (audioElement && !audioElement.paused) {
