@@ -181,7 +181,9 @@ class Tomato {
         if (this.state == 'ALARMING') {
             this.alarmAcknowledged()
         } else if (this.state == 'RUNNING') {
-            // TODO pause
+            this.pause()
+        } else if (this.state == 'MIDPHASE_PAUSE') {
+            this.unpause()
         } else if (this.state == 'PAUSED') {
             this.startPhase()
         }
@@ -225,6 +227,16 @@ class Tomato {
         return;
     }
 
+    pause() {
+        this.state = "MIDPHASE_PAUSE"
+        this.clock.pause()
+    }
+
+    unpause() {
+        this.state = "RUNNING"
+        this.clock.unpause()
+    }
+
     timerExpired() {
         this.clock.stop()
         window.clearInterval(this.interval)
@@ -248,7 +260,7 @@ class Tomato {
     }
 
     drawClock() {
-        if (this.state == 'RUNNING') {
+        if (this.state == 'RUNNING' || this.state == "MIDPHASE_PAUSE") {
             var remainingSeconds = Math.round(this.clock.drawClock());
             var seconds = ("" + remainingSeconds % 60).padStart(2, 0)
             var minutes = Math.floor(remainingSeconds / 60)

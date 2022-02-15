@@ -21,7 +21,7 @@
     "Name": "Tomato Timer",
     "Icon": "pluginIcon",
     "URL": "https://github.com/gallowaylabs/streamdeck-tomato-timer",
-    "Version": "0.2.1",
+    "Version": "0.2.2",
     "OS": [
         {
             "Platform": "mac",

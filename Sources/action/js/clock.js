@@ -29,6 +29,7 @@ function Clock(cnv) {
     var currentPhase = "WORK";
     var expirationDate = null;
     var totalDuration = null;
+    var savedRemainingSeconds = 0;
     
     var blinkCounter = 0;
 
@@ -57,9 +58,24 @@ function Clock(cnv) {
         totalDuration = null
     }
 
+    function pause() {
+        savedRemainingSeconds = remainingSeconds()
+    }
+
+    function unpause() {
+        var newDate = new Date()
+        newDate.setSeconds(newDate.getSeconds() + savedRemainingSeconds)
+        expirationDate = newDate
+        savedRemainingSeconds = 0
+    }
+
     function remainingSeconds() {
-        var now = new Date();
-        return (expirationDate - now) / 1000;
+        if (savedRemainingSeconds > 0) {
+            return savedRemainingSeconds
+        } else {
+            var now = new Date();
+            return (expirationDate - now) / 1000;
+        }
     }
 
     function drawBlink() {
@@ -125,6 +141,10 @@ function Clock(cnv) {
         ctx.textAlign = 'center';
         ctx.fillText(this.currentPhase, clockX, clockY)
 
+        if (savedRemainingSeconds > 0) {
+            ctx.fillText("PAUSE", clockX, clockY-20)
+        }
+
         return seconds >= 0 ? seconds : 0;
     }
 
@@ -152,6 +172,8 @@ function Clock(cnv) {
         remainingSeconds: remainingSeconds,
         drawBlink: drawBlink,
         currentPhase: currentPhase,
-        drawNextPhasePreview: drawNextPhasePreview
+        drawNextPhasePreview: drawNextPhasePreview,
+        pause: pause,
+        unpause: unpause
     }
 }
