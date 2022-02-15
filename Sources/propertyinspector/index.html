@@ -30,9 +30,18 @@
 
         <div type="select" class="sdpi-item">
             <div class="sdpi-item-label">Alarm Sound</div>
-            <select class="sdpi-item-value select soundSelector" onchange="sendValueToPlugin(event.target.value, 'alarm_filename')">
+            <select class="sdpi-item-value select soundSelector" onchange="handleAudioSelectChange(event)">
                 <option value="" label="None"></option>
+                <!-- <option value="custom" label="Custom"></option> -->
             </select>
+        </div>
+        <div class="sdpi-item" id="customSoundPickerWrapper" style="display: none;">
+            <div class="sdpi-item-label">Custom sound file</div>
+            <div class="sdpi-item-group file" id="filepickergroup">
+                <input class="sdpi-item-value" type="file" id="customSoundPicker" accept=".mp3, .wav" onchange="handleFilePicked(event)">
+                <label class="sdpi-file-info" for="customSoundPicker">No file...</label>
+                <label class="sdpi-file-label" for="customSoundPicker">Choose file...</label>
+            </div>
         </div>
         <div class="sdpi-item" id="tiny_button">
             <div class="sdpi-item-label">Preview Sound</div>
@@ -121,7 +130,6 @@
 
             const el = document.querySelector('.sdpi-wrapper');
             el.classList.remove('hidden');
-
         });
 
         $SD.on('didReceiveSettings', (jsonObj) => {
@@ -150,7 +158,7 @@
                     const val = Math.round(jsonObj.payload.settings.clock_index);
                     oClockSelector && Array.prototype.forEach.call(oClockSelector.options, function(o) {
                         o.label = localize(o.label);
-                        if(o.value !== val) {
+                        if  (o.value !== val) {
                             oClockSelector.value = val;
                         }
                     })
@@ -158,17 +166,39 @@
                 
                 if(jsonObj.payload.settings.hasOwnProperty('alarm_filename')) {
                     const oSoundSelector = document.querySelector(".soundSelector");
+                    var val = jsonObj.payload.settings.alarm_filename
                     oSoundSelector && Array.prototype.forEach.call(oSoundSelector.options, function(o) {
-                        var val = jsonObj.payload.settings.alarm_filename
                         if (o.value !== val) {
                             oSoundSelector.value = val;
                         }
                     })
-
                 }
             }
         });
 
+        function handleAudioSelectChange(event) {
+            console.log(event)
+
+            const oSoundSelector = document.querySelector(".soundSelector");
+            const oCustomSelectorWrapper = document.querySelector("#customSoundPickerWrapper")
+
+            if (event.target.value == "custom") {
+                oCustomSelectorWrapper.style['display'] = ''
+                oCustomSelectorWrapper.classList.remove('hidden')
+            } else {
+                oCustomSelectorWrapper.style['display'] = 'none'
+                sendValueToPlugin(event.target.value, 'alarm_filename')
+            }
+        }
+
+        function handleFilePicked(event) {
+            const path = decodeURIComponent(event.target.value.replace(/^C:\\fakepath\\/, ''))
+
+            const info = document.querySelector('.sdpi-file-info');
+            info.textContent = path.split('/').pop();
+
+            sendValueToPlugin(path, 'alarm_filename')
+        }
 
         function toggleSoundPreview() {
             const oSoundSelector = document.querySelector(".soundSelector");
