@@ -17,8 +17,3 @@ A configurable timer for practicing the pomodoro method for balancing work and b
 
 In the Release folder, you can find the file `com.gallowaylabs.tomato.sdPlugin`. If you double-click this file on your machine, Stream Deck will install the plugin. 
 If you don't have the repository downloaded, get the latest pre-built version on the [releases page](https://github.com/gallowaylabs/streamdeck-tomato-timer/releases)
-
-
-# Notes / Known Issues
-
-- There can only be one Tomato Timer action on your Stream Deck at any given time. Any timers added after the first one will not operate correctly
