@@ -28,92 +28,90 @@ var action = {
 
     onDidReceiveSettings: function(jsn) {
         console.log("onDidReceiveSettings", jsn);
+
         const settings = jsn.payload.settings;
-        const clock = this.cache[jsn.context];
-        if (!settings || !clock) return;
+        const instance = this.cache[jsn.context]['tomato'];
+
+        if (!settings || !instance) return;
+
+        instance.setCachedSettings(settings);
 
         if (settings.hasOwnProperty('clock_index')) { 
-            if (clock) {
-                clock.setClockFaceNum(Number(settings.clock_index));
-            }
+            instance.setClockFaceNum(Number(settings.clock_index));
         }
         if (settings.hasOwnProperty('alarm_filename')) {
-            if (clock) {
-                clock.setAlarmFileName(settings.alarm_filename);
-            }
+            instance.setAlarmFileName(settings.alarm_filename);
         }
         if (settings.hasOwnProperty('clock_type')) {
-            if (clock) {
-                clock.setClockType(settings.clock_type);
-            }
+            instance.setClockType(settings.clock_type);
         }
         if (settings.hasOwnProperty('work_time')) {
-            if (clock) {
-                clock.setWorkTime(parseInt(settings.work_time) * 60)
-            }
+            instance.setWorkTime(parseInt(settings.work_time) * 60)
         }
         if (settings.hasOwnProperty('short_break_time')) { 
-            if (clock) {
-                clock.setShortBreakTime(parseInt(settings.short_break_time) * 60)
-            }
+            instance.setShortBreakTime(parseInt(settings.short_break_time) * 60)
         }
         if (settings.hasOwnProperty('long_break_time')) { 
-            if (clock) {
-                clock.setLongBreakTime(parseInt(settings.long_break_time) * 60)
-            }
+            instance.setLongBreakTime(parseInt(settings.long_break_time) * 60)
         }
         if (settings.hasOwnProperty('disable_blink')) { 
-            if (clock) {
-                clock.setBlinkDisabled(settings.disable_blink)
-            }
+            instance.setBlinkDisabled(settings.disable_blink)
+        }
+        if (settings.hasOwnProperty('state')) { 
+            instance.setState(settings.state)
         }
     },
 
     onWillAppear: function(jsn) {
+        if (!jsn.payload || !jsn.payload.hasOwnProperty('settings')) return;
 
-        if(!jsn.payload || !jsn.payload.hasOwnProperty('settings')) return;
+        console.log('onWillAppear', jsn);
 
-        console.log('onWillAppear', jsn.payload.settings);
-
-        let found = this.cache[jsn.context];
-        if (!found) {
-            const clock = new Tomato(jsn.context);
-            this.cache[jsn.context] = clock;
+        let instance = this.cache[jsn.context]?.['tomato'];
+        if (!instance) {
+            this.cache[jsn.context] = {
+                tomato: new Tomato(jsn.context)
+            }
             this.onDidReceiveSettings(jsn);
+        } else {
+            // Force a redraw. This event is fired both on brand new instances, a prexisting 
+            // instance becoming visible again, and the instance being deleted 
+            // an re-added to the same position on the SD
+            instance.drawClock()
         }
     },
 
     onWillDisappear: function(jsn) {
         // Likely a no-op, we want to keep the Tomato instance to keep the timers running
+        console.log('onWillDisappear', jsn)
     },
 
     onKeyDown: function(jsn) {
-        const clock = this.cache[jsn.context];
+        const instance = this.cache[jsn.context]['tomato'];
         /** Edge case +++ */
-        if (!clock) this.onWillAppear(jsn);
+        if (!instance) this.onWillAppear(jsn);
 
-
-        this.cache[`${jsn.context}-buttoncheck`] = true
+        this.cache[jsn.context]['buttonCheck'] = true
         
         setTimeout(function() {
-            if (this.cache[`${jsn.context}-buttoncheck`]) {
-                this.cache[`${jsn.context}-skipnext`] = true
-                clock.reset()
+            if (this.cache[jsn.context]['buttonCheck']) {
+                this.cache[jsn.context]['skipNext'] = true
+                instance.reset()
             }
         }.bind(this), 1750)
 
     },
 
     onKeyUp: function(jsn) {
-        const clock = this.cache[jsn.context];
-        this.cache[`${jsn.context}-buttoncheck`] = false
+        const instance = this.cache[jsn.context]['tomato'];
+        this.cache[jsn.context]['buttonCheck'] = false
         
-        if (this.cache[`${jsn.context}-skipnext`]) {
-            this.cache[`${jsn.context}-skipnext`] = false
+        if (this.cache[jsn.context]['skipNext']) {
+            this.cache[jsn.context]['skipNext'] = false
         } else {
             /** Edge case +++ */
-            if (!clock) this.onWillAppear(jsn);
-            else clock.buttonPressed();
+            if (!instance) this.onWillAppear(jsn);
+            else instance.buttonPressed();
         }
     }
 
@@ -133,11 +131,12 @@ class Tomato {
         this.interval = 0
         this.cycleCounter = 0
         this.audioElement = null
+        this.cachedSettings = {}
 
         this.config = {
             workTime: 25 * 60,
             shortBreakTime: 5 * 60,
-            longBreakTime: 10 * 60,
+            longBreakTime: 25 * 60,
             alarmFileName: null,
             blinkDisabled: false, 
         }
@@ -157,7 +156,6 @@ class Tomato {
         return {
             name: "WORK",
             duration: this.config.workTime,
-            type: "WORK"
         }
     }
 
@@ -165,15 +163,13 @@ class Tomato {
         return {
             name: "BREAK",
             duration: this.config.shortBreakTime,
-            type: "SHORT"
         }
     }
 
     longBreakPhase() {
         return {
-            name: "BREAK",
+            name: "LONG_BREAK",
             duration: this.config.longBreakTime,
-            type: "LONG"
         }
     }
 
@@ -185,17 +181,17 @@ class Tomato {
         } else if (this.state == 'MIDPHASE_PAUSE') {
             this.unpause()
         } else if (this.state == 'PAUSED') {
-            this.startPhase()
+            this.start()
         }
     }
 
-    startPhase() {
+    start() {
         this.state = "RUNNING"
         this.phase = this.nextPhase
         this.clock.start(this.phase.duration, this.phase.name)
 
         if (this.phase.name == 'WORK') {
-            if (this.cycleCounter == 3) {
+            if (this.cycleCounter == 4) {
                 this.nextPhase = this.longBreakPhase()
                 this.cycleCounter = 0;
             } else {
@@ -214,6 +210,16 @@ class Tomato {
         }.bind(this), 1000);
     }
 
+    pause() {
+        this.state = "MIDPHASE_PAUSE"
+        this.clock.pause()
+    }
+
+    unpause() {
+        this.state = "RUNNING"
+        this.clock.unpause()
+    }
+
     alarmAcknowledged() {
         this.state = "PAUSED"
 
@@ -224,17 +230,9 @@ class Tomato {
         if (this.audioElement) {
             this.audioElement.pause()
         }
+
+        this.saveState()
         return;
-    }
-
-    pause() {
-        this.state = "MIDPHASE_PAUSE"
-        this.clock.pause()
-    }
-
-    unpause() {
-        this.state = "RUNNING"
-        this.clock.unpause()
     }
 
     timerExpired() {
@@ -300,14 +298,42 @@ class Tomato {
         this.phase = null
         this.nextPhase = this.workPhase()
         this.cycleCounter = 0
+
+        this.saveState()
         this.drawClock()
     }
 
+
+    saveState() {
+        const state = {
+            phase: (this.state == 'PAUSED' || this.state == 'ALARMING') ? this.nextPhase.name : this.phase.name,
+            cycle: this.cycleCounter
+        }
+        this.cachedSettings['state'] = state
+
+        $SD.api.setSettings(this.context, this.cachedSettings)
+    }
+
+    setState(state)  {
+        if (this.state == 'PAUSED') {
+            this.cycleCounter = state.cycle
+
+            if (state.phase == "WORK") {
+                this.nextPhase = this.workPhase()
+            } else if (state.phase == "BREAK") {
+                this.nextPhase = this.shortBreakPhase()
+            } else if (state.phase == "LONG_BREAK") {
+                this.nextPhase = this.longBreakPhase()
+            }
+
+            this.drawClock()
+        }
+    }
     
     setWorkTime(time) {
         this.config.workTime = time || 25 * 60
 
-        if (this.nextPhase.type == "WORK") {
+        if (this.nextPhase.name == "WORK") {
             this.nextPhase.duration = this.config.workTime
             this.drawClock()
         }
@@ -316,16 +342,16 @@ class Tomato {
     setShortBreakTime(time) {
         this.config.shortBreakTime = time || 5 * 60
 
-        if (this.nextPhase.type == "SHORT") {
+        if (this.nextPhase.name == "BREAK") {
             this.nextPhase.duration = this.config.shortBreakTime
             this.drawClock()
         }
     }
 
     setLongBreakTime(time) {
-        this.config.longBreakTime = time || 10 * 60
+        this.config.longBreakTime = time || 25 * 60
 
-        if (this.nextPhase.type == "LONG") {
+        if (this.nextPhase.name == "LONG_BREAK") {
             this.nextPhase.duration = this.config.longBreakTime
             this.drawClock()
         }
@@ -345,5 +371,11 @@ class Tomato {
         this.clock.setColors(this.clockface.colors);
 
         this.drawClock();
+    }
+
+    // This is a workaround for $SD.api.setSettings() not working in onWillDisappear.
+    // Instead, write new settings each time that work/break phase ends
+    setCachedSettings(settings) {
+        this.cachedSettings = settings
     }
 }

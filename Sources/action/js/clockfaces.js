@@ -2,7 +2,7 @@ var clockfaces = [
     {
         name: 'White',
         colors: {
-            stroke: '#c7c7c7',
+            stroke: '#e3e3e3',
             background: '#000000'
         },
         text: true
@@ -24,9 +24,9 @@ var clockfaces = [
         text: true
     },
     {
-        name: 'Cyan',
+        name: 'Blue',
         colors: {
-            stroke: '#00ffff',
+            stroke: '#3D6EE0',
             background: '#000000'
         },
         text: true

@@ -1,26 +1,14 @@
 /**
- * Simple Clock with adjustable colors (heavily inspired by kirupa: https://www.kirupa.com/html5/create_an_analog_clock_using_the_canvas.htm)
- * @param {canvas} cnv an existing canvas element in the DOM
- * API:
- * - drawClock() -> draws the clock - would normally called every second
- * - getImageData() -> returns base64-encode string of the canvas
- * - setColors(jsonObj) -> set colors of the clock's components as JSON
- * 		{
- *			hour:	"#efefef",
- *			minute: "#cccccc",
- *			second: "#ff9933",
- *			stroke: "#cccccc",
- *			background: "#000000"
- *		}
- * - getColors() -> get current color values
+ * Simple Clock with adjustable colors (inspired by kirupa: https://www.kirupa.com/html5/create_an_analog_clock_using_the_canvas.htm)
+ * @param {canvas} canvas an existing canvas element in the DOM
  */
 
-function Clock(cnv) {
-    if(!cnv) return;
-    var ctx = cnv.getContext('2d');
-    var clockRadius = cnv.width / 2;
-    var clockX = cnv.width / 2;
-    var clockY = cnv.height / 2;
+function Clock(canvas) {
+    if(!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var clockRadius = canvas.width / 2;
+    var clockX = canvas.width / 2;
+    var clockY = canvas.height / 2;
     var clockEnd = 3 * Math.PI / 2;
     var clockStart = -Math.PI / 2;
     var twopi = 2 * Math.PI;
@@ -50,7 +38,7 @@ function Clock(cnv) {
         newDate.setSeconds(newDate.getSeconds() + duration)
         expirationDate = newDate
         totalDuration = duration
-        this.currentPhase = phase
+        currentPhase = phase
     }
 
     function stop() {
@@ -81,13 +69,9 @@ function Clock(cnv) {
     function drawBlink() {
         // Blinking state alternates between background and stroke color, nominally every 1s
         ctx.fillStyle = blinkCounter % 2 == 0 ? colors.stroke : colors.background;
-        ctx.fillRect(0, 0, cnv.width, cnv.height);
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        ctx.fillStyle = blinkCounter % 2 == 1 ? colors.stroke : colors.background;
-        ctx.textBaseline = 'middle';
-        ctx.textAlign = 'center';
-        ctx.fillText(this.currentPhase, clockX, clockY)
-        ctx.fillText("OVER", clockX, clockY+20)
+        drawWords(null, currentPhase, "OVER", blinkCounter % 2 == 1 ? colors.stroke : colors.background)
 
         blinkCounter += 1
         return 0
@@ -95,10 +79,10 @@ function Clock(cnv) {
 
     function drawNextPhasePreview(nextPhase) {
         if (colors.background == "transparent") {
-            ctx.clearRect(0, 0, cnv.width, cnv.height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
         } else {
             ctx.fillStyle = colors.background;
-            ctx.fillRect(0, 0, cnv.width, cnv.height);
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
         ctx.beginPath();
@@ -107,22 +91,17 @@ function Clock(cnv) {
         ctx.strokeStyle = colors.stroke;
         ctx.stroke();
 
-        ctx.fillStyle = colors.stroke;
-        ctx.font = "bold 20px arial";
-        ctx.textBaseline = 'middle';
-        ctx.textAlign = 'center';
-        ctx.fillText("NEXT:", clockX, clockY-20)
-        ctx.fillText(nextPhase, clockX, clockY)
+        drawWords("NEXT:", nextPhase, null)
     }
 
     function drawClock() {
         var seconds = remainingSeconds()
 
         if (colors.background == "transparent") {
-            ctx.clearRect(0, 0, cnv.width, cnv.height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
         } else {
             ctx.fillStyle = colors.background;
-            ctx.fillRect(0, 0, cnv.width, cnv.height);
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
         ctx.beginPath();
@@ -135,36 +114,51 @@ function Clock(cnv) {
         ctx.strokeStyle = colors.stroke;
         ctx.stroke();
         
-        ctx.fillStyle = colors.stroke;
+        drawWords(savedRemainingSeconds > 0 ? "PAUSE": null, currentPhase, null)
+
+        return seconds >= 0 ? seconds : 0;
+    }
+
+    function drawWords(prefix, phase, suffix, fillOverride) {
+        ctx.fillStyle = fillOverride || colors.stroke;
         ctx.font = "bold 20px arial";
         ctx.textBaseline = 'middle';
         ctx.textAlign = 'center';
-        ctx.fillText(this.currentPhase, clockX, clockY)
 
-        if (savedRemainingSeconds > 0) {
-            ctx.fillText("PAUSE", clockX, clockY-20)
+        if (prefix) {
+            ctx.fillText(prefix, clockX, clockY-20)
         }
 
-        return seconds >= 0 ? seconds : 0;
+        if (phase.indexOf('_') > 0) {
+            const parts = phase.split('_')
+            if (suffix) {
+                ctx.fillText(parts[0], clockX, clockY-20)
+                ctx.fillText(parts[1], clockX, clockY)
+                ctx.fillText(suffix, clockX, clockY+20)
+            } else {
+                ctx.fillText(parts[0], clockX, clockY)
+                ctx.fillText(parts[1], clockX, clockY+20)
+            }
+        } else {
+            ctx.fillText(phase, clockX, clockY)
+            if (suffix) {
+                ctx.fillText(suffix, clockX, clockY+20)
+            }
+        }
     }
 
     function setColors(jsnColors) {
         (typeof jsnColors === 'object') && Object.keys(jsnColors).map(c => colors[c] = jsnColors[c]);
     }
 
-    function getColors() {
-        return this.colors;
-    }
-
     function getImageData() {
-        return cnv.toDataURL();
+        return canvas.toDataURL();
     }
 
     return {
         drawClock: drawClock,
         getImageData: getImageData,
         setColors: setColors,
-        getColors: getColors,
         colors: colors,
         resetColors: resetColors,
         start: start,
