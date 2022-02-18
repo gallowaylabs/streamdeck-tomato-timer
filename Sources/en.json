@@ -1,9 +1,9 @@
 {
-  "Description": "Balance your work and break time with the Pomodoro method", 
+  "Description": "Timers to help balance your work and break time", 
   "Name": "Tomato Timer", 
   "com.gallowaylabs.tomato.clock": {
-    "Name": "Tomato Timer", 
-    "Tooltip": "Balance your work and break time with the Pomodoro method"
+    "Name": "Timer", 
+    "Tooltip": "Timers to help balance your work and break time"
   },
   
   "Localization": {

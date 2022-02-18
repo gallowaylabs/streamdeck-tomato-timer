@@ -1,8 +1,8 @@
 {
     "Actions": [
         {
-            "Icon": "action/images/actionimage",
-            "Name": "Tomato Timer",
+            "Icon": "action/images/actionIcon",
+            "Name": "Timer",
             "States": [
                 {
                     "Image": "action/images/image"
@@ -19,9 +19,11 @@
     "PropertyInspectorPath": "propertyinspector/index.html",
     "Description": "Timers to help balance your work and break time",
     "Name": "Tomato Timer",
+    "Category": "Tomato Timer",
+    "CategoryIcon": "categoryIcon",
     "Icon": "pluginIcon",
     "URL": "https://github.com/gallowaylabs/streamdeck-tomato-timer",
-    "Version": "0.3.0",
+    "Version": "0.3.1",
     "OS": [
         {
             "Platform": "mac",

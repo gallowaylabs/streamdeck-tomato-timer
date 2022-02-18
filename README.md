@@ -6,7 +6,7 @@ A configurable timer for practicing the [Pomodoro Technique](https://en.wikipedi
 # Features
 
 - Configurable work, short and long break durations
-- 4 different alarm clock sounds 
+- Use one of 3 built-in alarm clock sounds or select an mp3 of your own
 - 7 color palette swap themes
 - cross-platform (macOS, Windows)
 
