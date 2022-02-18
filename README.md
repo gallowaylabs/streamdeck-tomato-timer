@@ -1,6 +1,6 @@
 # Stream Deck Tomato Timer
 
-A configurable timer for practicing the [pomodoro technique](https://en.wikipedia.org/wiki/Pomodoro_Technique) for balancing work and break times. 
+A configurable timer for practicing the [Pomodoro Technique](https://en.wikipedia.org/wiki/Pomodoro_Technique) for balancing work and break times. 
 
 
 # Features

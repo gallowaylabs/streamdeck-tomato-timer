@@ -9,7 +9,7 @@
                 }
             ],
             "SupportedInMultiActions": false,
-            "Tooltip": "Balance your work and break time with the Pomodoro method",
+            "Tooltip": "Timers to help balance your work and break time",
             "UUID": "com.gallowaylabs.tomato.clock"
         }
     ],
@@ -17,7 +17,7 @@
     "Author": "Galloway Labs",
     "CodePath": "index.html",
     "PropertyInspectorPath": "propertyinspector/index.html",
-    "Description": "Balance your work and break time with the Pomodoro method",
+    "Description": "Timers to help balance your work and break time",
     "Name": "Tomato Timer",
     "Icon": "pluginIcon",
     "URL": "https://github.com/gallowaylabs/streamdeck-tomato-timer",
