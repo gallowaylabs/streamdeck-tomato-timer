@@ -32,14 +32,14 @@
             <div class="sdpi-item-label">Alarm Sound</div>
             <select class="sdpi-item-value select soundSelector" onchange="handleAudioSelectChange(event)">
                 <option value="" label="None"></option>
-                <!-- <option value="custom" label="Custom"></option> -->
+                <option value="custom" label="Custom"></option>
             </select>
         </div>
         <div class="sdpi-item" id="customSoundPickerWrapper" style="display: none;">
             <div class="sdpi-item-label">Custom sound file</div>
             <div class="sdpi-item-group file" id="filepickergroup">
                 <input class="sdpi-item-value" type="file" id="customSoundPicker" accept=".mp3, .wav" onchange="handleFilePicked(event)">
-                <label class="sdpi-file-info" for="customSoundPicker">No file...</label>
+                <label class="sdpi-file-info" for="customSoundPicker">No file selected</label>
                 <label class="sdpi-file-label" for="customSoundPicker">Choose file...</label>
             </div>
         </div>
@@ -171,12 +171,27 @@
                 
                 if(jsonObj.payload.settings.hasOwnProperty('alarm_filename')) {
                     const oSoundSelector = document.querySelector(".soundSelector");
+                    const oCustomSelectorWrapper = document.querySelector("#customSoundPickerWrapper")
+                    const oCustomSoundPicker = document.querySelector("#customSoundPicker")
+
                     var val = jsonObj.payload.settings.alarm_filename
-                    oSoundSelector && Array.prototype.forEach.call(oSoundSelector.options, function(o) {
-                        if (o.value !== val) {
-                            oSoundSelector.value = val;
-                        }
-                    })
+                    
+                    if (val && !sounds.some((sound) => sound.filename == val)) {
+                        // Incoming value isn't in the list of sounds, it must be a custom value
+                        oSoundSelector.value = "custom"
+                        oCustomSelectorWrapper.style['display'] = ''
+                        const info = document.querySelector('.sdpi-file-info')
+                        info.textContent = val.split('/').pop()
+                    } else {
+                        oSoundSelector && Array.prototype.forEach.call(oSoundSelector.options, function(o) {
+                            if (o.value !== val) {
+                                oSoundSelector.value = val
+                            }
+                        })
+                        
+                        oCustomSelectorWrapper.style['display'] = 'none'
+                    }
+                    
                 }
             }
         });
@@ -186,12 +201,14 @@
 
             const oSoundSelector = document.querySelector(".soundSelector");
             const oCustomSelectorWrapper = document.querySelector("#customSoundPickerWrapper")
+            const oFileInfo = document.querySelector('.sdpi-file-info');
 
             if (event.target.value == "custom") {
                 oCustomSelectorWrapper.style['display'] = ''
-                oCustomSelectorWrapper.classList.remove('hidden')
             } else {
                 oCustomSelectorWrapper.style['display'] = 'none'
+                oFileInfo.textContent = "No file selected"
+
                 sendValueToPlugin(event.target.value, 'alarm_filename')
             }
         }
@@ -207,10 +224,16 @@
 
         function toggleSoundPreview() {
             const oSoundSelector = document.querySelector(".soundSelector");
-            
+
             if (!audioElement || audioElement.paused) {
                 if (oSoundSelector.value != "") {
-                    audioElement = new Audio(`../${oSoundSelector.value}`)
+                    if (oSoundSelector.value == "custom") {
+                        // Get the filename from memoized settings because we can't put the file 
+                        // path value into the file picker on page reload
+                        audioElement = new Audio(MSETTINGS['alarm_filename'])
+                    } else {
+                        audioElement = new Audio(`../${oSoundSelector.value}`)
+                    }
                     audioElement.play()
                 }
             } else if (audioElement && !audioElement.paused) {
