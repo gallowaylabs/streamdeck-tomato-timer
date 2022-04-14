@@ -57,6 +57,9 @@ var action = {
         if (settings.hasOwnProperty('disable_blink')) { 
             instance.setBlinkDisabled(settings.disable_blink)
         }
+        if (settings.hasOwnProperty('expire_action')) { 
+            instance.setExpireAction(settings.expire_action)
+        }
         if (settings.hasOwnProperty('state')) { 
             instance.setState(settings.state)
         }
@@ -132,6 +135,8 @@ class Tomato {
         this.cycleCounter = 0
         this.audioElement = null
         this.cachedSettings = {}
+        this.expireAction = "2_press"  // 2_press, 1_press, auto
+        this.autostartTimeout = null
 
         this.config = {
             workTime: 25 * 60,
@@ -186,6 +191,11 @@ class Tomato {
     }
 
     start() {
+        if (this.state == "RUNNING") {
+            // Avoid double start with auto mode
+            return
+        }
+
         this.state = "RUNNING"
         this.phase = this.nextPhase
         this.clock.start(this.phase.duration, this.phase.name)
@@ -202,7 +212,12 @@ class Tomato {
             this.nextPhase = this.workPhase()
         }
 
-        this.interval = setInterval(function(sx) {
+        if (this.interval) {
+            // Auto mode rollover will still have the interval set
+            window.clearInterval(this.interval)
+        }
+
+        this.interval = window.setInterval(function(sx) {
             var remainingSeconds = this.drawClock();
             if (remainingSeconds <= 0) {
                 this.timerExpired()
@@ -232,6 +247,15 @@ class Tomato {
         }
 
         this.saveState()
+
+        if (this.expireAction == '1_press' || this.expireAction == 'auto') {
+            if (this.autostartTimeout) {
+                window.clearTimeout(this.autostartTimeout)
+                this.autostartTimeout = 0
+            }
+            this.start()
+        }
+
         return;
     }
 
@@ -254,6 +278,21 @@ class Tomato {
         if (this.config.alarmFileName) {
             this.audioElement = new Audio(this.config.alarmFileName)
             this.audioElement.play()
+
+            if (this.expireAction == 'auto') {
+                const self = this
+                this.audioElement.onloadedmetadata = function() {
+                    // Start the next phase when the alarm finishes ringing
+                    self.autostartTimeout = window.setTimeout(function() {
+                        self.start()
+                    }, this.duration * 1000)
+                };
+            }
+        } else if (this.expireAction == 'auto') {
+            // No sound effect, so arbitrarily pick 5 seconds before the next phase auto starts
+            this.autostartTimeout = window.setTimeout(function() {
+                this.start()
+            }, 5000)
         }
     }
 
@@ -377,5 +416,9 @@ class Tomato {
     // Instead, write new settings each time that work/break phase ends
     setCachedSettings(settings) {
         this.cachedSettings = settings
+    }
+
+    setExpireAction(action) {
+        this.expireAction = action
     }
 }

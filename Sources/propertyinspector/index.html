@@ -48,6 +48,15 @@
             <button class="sdpi-item-value" onclick="toggleSoundPreview()">Click to play</button>
         </div>
 
+        <div type="select" class="sdpi-item">
+            <div class="sdpi-item-label">When the timer ends</div>
+            <select class="sdpi-item-value select expireSelector" onchange="sendValueToPlugin(event.target.value, 'expire_action')">
+                <option value="2_press" label="Press to stop alarm, press again to start next timer">asd</option>
+                <option value="1_press" label="Press to stop alarm and immediately start next timer"></option>
+                <option value="auto" label="Automatically start next timer after alarm sounds"></option>
+            </select>
+        </div>
+
         <div type="checkbox" class="sdpi-item">
             <div class="sdpi-item-label">Disable Blinking</div>
             <div class="sdpi-item-value">
@@ -158,7 +167,7 @@
                     inputField.checked = jsonObj.payload.settings['disable_blink']
                 }
 
-                if(jsonObj.payload.settings.hasOwnProperty('clock_index')) {
+                if (jsonObj.payload.settings.hasOwnProperty('clock_index')) {
                     const oClockSelector = document.querySelector(".clockSelector");
                     const val = Math.round(jsonObj.payload.settings.clock_index);
                     oClockSelector && Array.prototype.forEach.call(oClockSelector.options, function(o) {
@@ -169,7 +178,18 @@
                     })
                 }
                 
-                if(jsonObj.payload.settings.hasOwnProperty('alarm_filename')) {
+                if (jsonObj.payload.settings.hasOwnProperty('expire_action')) {
+                    const selector = document.querySelector(".expireSelector");
+                    const val = jsonObj.payload.settings.expire_action;
+                    selector && Array.prototype.forEach.call(selector.options, function(o) {
+                        o.label = localize(o.label);
+                        if  (o.value !== val) {
+                            selector.value = val;
+                        }
+                    })
+                }
+
+                if (jsonObj.payload.settings.hasOwnProperty('alarm_filename')) {
                     const oSoundSelector = document.querySelector(".soundSelector");
                     const oCustomSelectorWrapper = document.querySelector("#customSoundPickerWrapper")
                     const oCustomSoundPicker = document.querySelector("#customSoundPicker")
