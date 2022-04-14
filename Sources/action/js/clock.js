@@ -68,10 +68,11 @@ function Clock(canvas) {
 
     function drawBlink() {
         // Blinking state alternates between background and stroke color, nominally every 1s
-        ctx.fillStyle = blinkCounter % 2 == 0 ? colors.stroke : colors.background;
+        ctx.fillStyle = blinkCounter % 2 == 0 ? colors.stroke : (colors.background == 'transparent' ? '#000000' : colors.background);
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        drawWords(null, currentPhase, "OVER", blinkCounter % 2 == 1 ? colors.stroke : colors.background)
+        var color = blinkCounter % 2 == 1 ? colors.stroke : (colors.background == 'transparent' ? '#000000' : colors.background)
+        drawWords(null, currentPhase, "OVER", color)
 
         blinkCounter += 1
         return 0
