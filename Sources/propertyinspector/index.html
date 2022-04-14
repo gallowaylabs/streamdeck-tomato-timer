@@ -45,7 +45,7 @@
         </div>
         <div class="sdpi-item" id="tiny_button">
             <div class="sdpi-item-label">Preview Sound</div>
-            <button class="sdpi-item-value" onclick="toggleSoundPreview()">Click to play</button>
+            <button class="sdpi-item-value" id="soundPreviewButton" onclick="toggleSoundPreview()">Click to play</button>
         </div>
 
         <div type="select" class="sdpi-item">
@@ -79,7 +79,8 @@
             </ul>
 
             <p>
-                This action will audibly and visibly alert you when the timer has expired. Press the button again to start the timer for the next phase. 
+                This action will audibly and visibly alert you when the timer has expired. The "when the timer ends" option lets you choose how many button
+                presses are needed to turn off the alarm and start the next timer. 
                 You can pause the timer at any time with a short press to pause and later resume. Pressing and holding for 2 seconds resets the internal
                 cycle counter back to the first work phase.
             </p>
@@ -110,7 +111,8 @@
             actionInfo,
             ctx,
             lang,
-            audioElement;
+            audioElement,
+            audioLabelTimeout;
 
         $SD.on('connected', (jsonObj) => {
 
@@ -254,10 +256,25 @@
                     } else {
                         audioElement = new Audio(`../${oSoundSelector.value}`)
                     }
+
+                    audioElement.onloadedmetadata = function() {
+                        // Start the next phase when the alarm finishes ringing
+                        audioLabelTimeout = window.setTimeout(function() {
+                            document.querySelector('#soundPreviewButton').innerText = 'Click to play'
+                        }, this.duration * 1000)
+                    }
+
                     audioElement.play()
+                    document.querySelector('#soundPreviewButton').innerText = 'Click to stop'
                 }
             } else if (audioElement && !audioElement.paused) {
                 audioElement.pause()
+                document.querySelector('#soundPreviewButton').innerText = 'Click to play'
+
+                if (audioLabelTimeout) {
+                    clearTimeout(audioLabelTimeout)
+                    audioLabelTimeout = undefined
+                }
             }
         }
 
