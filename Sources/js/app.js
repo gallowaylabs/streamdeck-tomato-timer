@@ -42,6 +42,9 @@ var action = {
         if (settings.hasOwnProperty('alarm_filename')) {
             instance.setAlarmFileName(settings.alarm_filename);
         }
+        if (settings.hasOwnProperty('alarm_volume')) { 
+            instance.setAlarmVolume(settings.alarm_volume)
+        }
         if (settings.hasOwnProperty('clock_type')) {
             instance.setClockType(settings.clock_type);
         }
@@ -134,6 +137,7 @@ class Tomato {
         this.interval = 0
         this.cycleCounter = 0
         this.audioElement = null
+        this.volume = 1
         this.cachedSettings = {}
         this.expireAction = "2_press"  // 2_press, 1_press, auto
         this.autostartTimeout = null
@@ -277,6 +281,7 @@ class Tomato {
 
         if (this.config.alarmFileName) {
             this.audioElement = new Audio(this.config.alarmFileName)
+            this.audioElement.volume = this.volume
             this.audioElement.play()
 
             if (this.expireAction == 'auto') {
@@ -402,6 +407,10 @@ class Tomato {
 
     setAlarmFileName(name) {
         this.config.alarmFileName = name
+    }
+    
+    setAlarmVolume(volume) {
+        this.volume = volume
     }
 
     setClockFaceNum(idx) {

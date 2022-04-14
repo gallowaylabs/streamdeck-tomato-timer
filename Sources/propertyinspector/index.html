@@ -43,6 +43,14 @@
                 <label class="sdpi-file-label" for="customSoundPicker">Choose file...</label>
             </div>
         </div>
+        <div type="range" class="sdpi-item" id="range_with_meters">
+            <div class="sdpi-item-label">Alarm Volume</div>
+            <div class="sdpi-item-value">
+                <span class="clickable" value=0>0</span>
+                <input class="floating-tooltip" id="alarmVolumeRange" type="range" min="5" max="100" value=100 onchange="handleVolumeChange(event)" />
+                <span class="clickable" value="100">100</span>
+            </div>
+        </div>
         <div class="sdpi-item" id="tiny_button">
             <div class="sdpi-item-label">Preview Sound</div>
             <button class="sdpi-item-value" id="soundPreviewButton" onclick="toggleSoundPreview()">Click to play</button>
@@ -112,6 +120,7 @@
             ctx,
             lang,
             audioElement,
+            volume,
             audioLabelTimeout;
 
         $SD.on('connected', (jsonObj) => {
@@ -213,7 +222,13 @@
                         
                         oCustomSelectorWrapper.style['display'] = 'none'
                     }
-                    
+                }
+
+                if (jsonObj.payload.settings.hasOwnProperty('alarm_volume')) {
+                    console.log(jsonObj.payload.settings['alarm_volume'])
+                    const inputField = document.querySelector('#alarmVolumeRange');
+                    volume = parseFloat(jsonObj.payload.settings['alarm_volume'])
+                    inputField.value = volume * 100
                 }
             }
         });
@@ -264,6 +279,7 @@
                         }, this.duration * 1000)
                     }
 
+                    audioElement.volume = volume
                     audioElement.play()
                     document.querySelector('#soundPreviewButton').innerText = 'Click to stop'
                 }
@@ -278,6 +294,14 @@
             }
         }
 
+        function handleVolumeChange(event) {
+            volume = event.target.value / 100
+            if (audioElement) {
+                audioElement.volume = volume
+            }
+
+            sendValueToPlugin(volume, 'alarm_volume')
+        }
 
         function sendValueToPlugin(value, param) {
 
