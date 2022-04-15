@@ -279,7 +279,7 @@
                         }, this.duration * 1000)
                     }
 
-                    audioElement.volume = volume
+                    audioElement.volume = volume || 1
                     audioElement.play()
                     document.querySelector('#soundPreviewButton').innerText = 'Click to stop'
                 }
