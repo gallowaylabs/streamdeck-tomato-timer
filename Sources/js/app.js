@@ -102,7 +102,7 @@ var action = {
         setTimeout(function() {
             if (this.cache[jsn.context]['buttonCheck']) {
                 this.cache[jsn.context]['skipNext'] = true
-                instance.reset()
+                instance.skipToNext()
             }
         }.bind(this), 1750)
 
@@ -332,6 +332,32 @@ class Tomato {
         }
         
         return 0
+    }
+
+    skipToNext() {
+        this.clock.stop()
+        window.clearInterval(this.interval)
+        this.interval = 0
+
+        if (this.state === 'PAUSED') {
+            this.phase = this.nextPhase
+            if (this.phase.name == 'WORK') {
+                if (this.cycleCounter == 4) {
+                    this.nextPhase = this.longBreakPhase()
+                    this.cycleCounter = 0;
+                } else {
+                    this.nextPhase = this.shortBreakPhase()
+                    this.cycleCounter += 1;
+                }
+            } else {
+                this.nextPhase = this.workPhase()
+            }
+        }
+
+        this.state = 'PAUSED'
+
+        this.saveState()
+        this.drawClock()
     }
 
     reset() {
