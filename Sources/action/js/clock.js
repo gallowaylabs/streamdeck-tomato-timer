@@ -44,6 +44,7 @@ function Clock(canvas) {
     function stop() {
         expirationDate = null
         totalDuration = null
+        savedRemainingSeconds = 0
     }
 
     function pause() {
@@ -156,6 +157,16 @@ function Clock(canvas) {
         return canvas.toDataURL();
     }
 
+    function setOrientation(orientation) {
+        if (orientation === 'bottom') {
+            clockEnd = Math.PI / 2;
+            clockStart = -3 * Math.PI / 2;
+        } else {
+            clockEnd = 3 * Math.PI / 2;
+            clockStart = -Math.PI / 2;
+        }
+    }
+
     return {
         drawClock: drawClock,
         getImageData: getImageData,
@@ -169,6 +180,7 @@ function Clock(canvas) {
         currentPhase: currentPhase,
         drawNextPhasePreview: drawNextPhasePreview,
         pause: pause,
-        unpause: unpause
+        unpause: unpause,
+        setOrientation: setOrientation
     }
 }

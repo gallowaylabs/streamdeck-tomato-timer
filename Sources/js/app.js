@@ -66,6 +66,9 @@ var action = {
         if (settings.hasOwnProperty('state')) { 
             instance.setState(settings.state)
         }
+        if (settings.hasOwnProperty('orientation')) { 
+            instance.setOrientation(settings.orientation)
+        }
     },
 
     onWillAppear: function(jsn) {
@@ -373,7 +376,6 @@ class Tomato {
         this.drawClock()
     }
 
-
     saveState() {
         const state = {
             phase: (this.state == 'PAUSED' || this.state == 'ALARMING') ? this.nextPhase.name : this.phase.name,
@@ -445,6 +447,10 @@ class Tomato {
         this.clock.setColors(this.clockface.colors);
 
         this.drawClock();
+    }
+
+    setOrientation(orientation) {
+        this.clock.setOrientation(orientation)
     }
 
     // This is a workaround for $SD.api.setSettings() not working in onWillDisappear.

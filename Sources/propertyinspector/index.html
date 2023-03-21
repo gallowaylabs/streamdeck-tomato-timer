@@ -57,9 +57,17 @@
         </div>
 
         <div type="select" class="sdpi-item">
+            <div class="sdpi-item-label">Clock start/end position</div>
+            <select class="sdpi-item-value select orientation" onchange="sendValueToPlugin(event.target.value, 'orientation')">
+                <option value="top" label="Top">Top</option>
+                <option value="bottom" label="Bottom">Bottom</option>
+            </select>
+        </div>
+
+        <div type="select" class="sdpi-item">
             <div class="sdpi-item-label">When the timer ends</div>
             <select class="sdpi-item-value select expireSelector" onchange="sendValueToPlugin(event.target.value, 'expire_action')">
-                <option value="2_press" label="Press to stop alarm, press again to start next timer">asd</option>
+                <option value="2_press" label="Press to stop alarm, press again to start next timer"></option>
                 <option value="1_press" label="Press to stop alarm and immediately start next timer"></option>
                 <option value="auto" label="Automatically start next timer after alarm sounds"></option>
             </select>
@@ -89,8 +97,7 @@
             <p>
                 This action will audibly and visibly alert you when the timer has expired. The "when the timer ends" option lets you choose how many button
                 presses are needed to turn off the alarm and start the next timer. 
-                You can pause the timer at any time with a short press to pause and later resume. Pressing and holding for 2 seconds resets the internal
-                cycle counter back to the first work phase.
+                You can pause the timer at any time with a short press to pause and later resume. Pressing and holding for 2 seconds skips the current phase and moves to the next one. 
             </p>
             <p>
                 Note: This action times things differently than the standard method; the fourth break is one long break interval instead of a short 
