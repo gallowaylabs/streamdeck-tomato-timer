@@ -22,8 +22,7 @@ A configurable timer for practicing the [Pomodoro Technique](https://en.wikipedi
 - Repeat this process 3 more times, then</li>
 - Take a long break (25 minutes)</li>
 
-You can pause the timer at any time with a short press to pause and later resume. Pressing and holding for 2 seconds resets the internal
-cycle counter back to the first work phase.
+You can pause the timer at any time with a short press to pause and later resume. Pressing and holding for 2 seconds ends the current phase and moves to the next one.
 
 Note: This action times things differently than the standard Pomodoro method; the fourth break is one long break interval instead of a short break into a long break. 
 
