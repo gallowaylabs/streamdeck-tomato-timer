@@ -43,6 +43,15 @@
                 <label class="sdpi-file-label" for="customSoundPicker">Choose file...</label>
             </div>
         </div>
+        <div type="checkbox" class="sdpi-item">
+            <div class="sdpi-item-label">Alarm Sound Loop/Repeat</div>
+            <div class="sdpi-item-value">
+                <div class="sdpi-item-child">
+                    <input id="alarm_loop_enable" type="checkbox" value="enabled" onchange="sendValueToPlugin(event.target.checked, 'alarm_loop_enable')">
+                    <label for="alarm_loop_enable" class="sdpi-item-label"><span></span>Yes</label>
+                </div>
+            </div>
+        </div>
         <div type="range" class="sdpi-item" id="range_with_meters">
             <div class="sdpi-item-label">Alarm Volume</div>
             <div class="sdpi-item-value">
@@ -179,6 +188,11 @@
                         inputField.value = jsonObj.payload.settings[field];
                     }
                 });
+
+                if (jsonObj.payload.settings.hasOwnProperty('alarm_loop_enable')) {
+                    const inputField = document.querySelector('#alarm_loop_enable');
+                    inputField.checked = jsonObj.payload.settings['alarm_loop_enable']
+                }
 
                 if (jsonObj.payload.settings.hasOwnProperty('disable_blink')) {
                     const inputField = document.querySelector('#disable_blink');

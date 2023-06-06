@@ -45,6 +45,9 @@ var action = {
         if (settings.hasOwnProperty('alarm_volume')) { 
             instance.setAlarmVolume(settings.alarm_volume)
         }
+        if (settings.hasOwnProperty('alarm_loop_enable')) {
+            instance.setAlarmLoop(settings.alarm_loop_enable)
+        }
         if (settings.hasOwnProperty('clock_type')) {
             instance.setClockType(settings.clock_type);
         }
@@ -150,6 +153,7 @@ class Tomato {
             shortBreakTime: 5 * 60,
             longBreakTime: 25 * 60,
             alarmFileName: null,
+            alarmLoop: false,
             blinkDisabled: false, 
         }
 
@@ -287,8 +291,11 @@ class Tomato {
             this.audioElement.volume = this.volume
             this.audioElement.play()
 
+            if (this.config.alarmLoop) { this.audioElement.loop = true }
+
             if (this.expireAction == 'auto') {
                 const self = this
+                if (this.config.alarmLoop) { this.audioElement.loop = false }
                 this.audioElement.onloadedmetadata = function() {
                     // Start the next phase when the alarm finishes ringing
                     self.autostartTimeout = window.setTimeout(function() {
@@ -439,6 +446,10 @@ class Tomato {
     
     setAlarmVolume(volume) {
         this.volume = volume
+    }
+
+    setAlarmLoop(enabled) {
+        this.config.alarmLoop = enabled
     }
 
     setClockFaceNum(idx) {
