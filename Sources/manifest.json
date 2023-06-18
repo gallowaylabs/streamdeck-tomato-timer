@@ -17,7 +17,7 @@
     "Author": "Galloway Labs",
     "CodePath": "index.html",
     "PropertyInspectorPath": "propertyinspector/index.html",
-    "Description": "Timers to help balance your work and break time",
+    "Description": "A configurable timer to help you balance work and break time",
     "Name": "Tomato Timer",
     "Category": "Tomato Timer",
     "CategoryIcon": "categoryIcon",
